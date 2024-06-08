@@ -139,12 +139,12 @@ function get_action() {
   // Check for nearby bombs
   const isBombNearby = bombs.some((bomb) => {
     const distance = Math.abs(bomb.x - aiPosition.x) + Math.abs(bomb.y - aiPosition.y);
-    return distance <= 3;
+    return distance <= 4;
   });
 
   const isFireNearby = fire.some((fire) => {
     const distance = Math.abs(fire.x - aiPosition.x) + Math.abs(fire.y - aiPosition.y);
-    return distance <= 1;
+    return distance <= 2;
   });
 
   const isMovePossible = (direction) => {
@@ -161,21 +161,25 @@ function get_action() {
       x: 1,
       y: 0
     }) && fire.some((fire) => fire.x < aiPosition.x && Math.abs(fire.y - aiPosition.y) <= 1)) {
+      currentDirection = {x: 1, y: 0};
       return actions.right; // Move right to avoid bomb to the left
     } else if (isMovePossible({
       x: -1,
       y: 0
     }) && fire.some((fire) => fire.x > aiPosition.x && Math.abs(fire.y - aiPosition.y) <= 1)) {
+      currentDirection = {x: -1, y: 0};
       return actions.left; // Move left to avoid bomb to the right
     } else if (isMovePossible({
       x: 0,
       y: 1
     }) && fire.some((fire) => fire.y < aiPosition.y && Math.abs(fire.x - aiPosition.x) <= 1)) {
+      currentDirection = {x: 0, y: 1};
       return actions.down; // Move down to avoid bomb above
     } else if (isMovePossible({
       x: 0,
       y: -1
     }) && fire.some((fire) => fire.y > aiPosition.y && Math.abs(fire.x - aiPosition.x) <= 1)) {
+      currentDirection = {x: 0, y: -1};
       return actions.up; // Move up to avoid bomb below
     }
   }
@@ -185,40 +189,93 @@ function get_action() {
       x: 1,
       y: 0
     }) && bombs.some((bomb) => bomb.x < aiPosition.x && Math.abs(bomb.y - aiPosition.y) <= 1)) {
+      currentDirection = {x: 1, y: 0};
       return actions.right; // Move right to avoid bomb to the left
     } else if (isMovePossible({
       x: -1,
       y: 0
     }) && bombs.some((bomb) => bomb.x > aiPosition.x && Math.abs(bomb.y - aiPosition.y) <= 1)) {
+      currentDirection = {x: -1, y: 0};
       return actions.left; // Move left to avoid bomb to the right
     } else if (isMovePossible({
       x: 0,
       y: 1
     }) && bombs.some((bomb) => bomb.y < aiPosition.y && Math.abs(bomb.x - aiPosition.x) <= 1)) {
+      currentDirection = {x: 0, y: 1};
       return actions.down; // Move down to avoid bomb above
     } else if (isMovePossible({
       x: 0,
       y: -1
     }) && bombs.some((bomb) => bomb.y > aiPosition.y && Math.abs(bomb.x - aiPosition.x) <= 1)) {
+      currentDirection = {x: 0, y: -1};
       return actions.up; // Move up to avoid bomb below
     }
   }
 
-
-
   const isPlayerNearby = players.some((player) => {
     if (player.id === my_id) return false; // Skip checking against self
     const distance = Math.abs(player.x - aiPosition.x) + Math.abs(player.y - aiPosition.y);
-    return distance <= 3;
+    return distance <= 2;
   });
 
   if (isPlayerNearby) {
     return actions.bomb
   }
 
+  const isMoveSafe = (direction) => {
+    const { x, y } = direction;
+    const newX = aiPosition.x + x;
+    const newY = aiPosition.y + y;
+
+    // Check if the move is within the board bounds and not a wood tile
+    if (
+        newX >= 0 &&
+        newX < board[0].length &&
+        newY >= 0 &&
+        newY < board.length &&
+        board[newY][newX] !== tileTypes.wood
+    ) {
+      // Check if there is a bomb nearby the destination tile
+      return !bombs.some((bomb) => Math.abs(bomb.x - newX) <= 1 && Math.abs(bomb.y - newY) <= 1);
+       // Safe move
+    }
+    return false; // Move outside the board or onto a wood tile
+  };
+
+  const r = Math.floor(Math.random() * 4);
+
+  if (aiPosition.x === 4 && (aiPosition.y === 0 || aiPosition.y ===14) && currentDirection.y === 0 && r===1 && isMoveSafe({x: 0, y: 1})){
+    currentDirection = {x: 0, y: 1};
+    return actions.down
+  }
+  else if (aiPosition.x === 6 && (aiPosition.y === 0 || aiPosition.y ===14) && currentDirection.y === 0 && r===2 && isMoveSafe({x: 0, y: 1})){
+    currentDirection = {x: 0, y: 1};
+    return actions.down
+  }
+  else if (aiPosition.x === 8 && (aiPosition.y === 0 || aiPosition.y ===14) && currentDirection.y === 0 && r===3 && isMoveSafe({x: 0, y: 1})){
+    currentDirection = {x: 0, y: 1};
+    return actions.down
+  }
+
+  if (aiPosition.y === 4 && (aiPosition.x === 0 || aiPosition.x === 14) && currentDirection.x === 0 && r===1 && isMoveSafe({x: 1, y: 0})){
+    currentDirection = {x: 1, y: 0};
+    return actions.right
+  }
+  else if (aiPosition.y === 6 && (aiPosition.x === 0 || aiPosition.x === 14) && currentDirection.x === 0 && r===2 && isMoveSafe({x: 1, y: 0})){
+    currentDirection = {x: 1, y: 0};
+    return actions.right
+  }
+  else if (aiPosition.y === 8 && (aiPosition.x === 0 || aiPosition.x === 14) && currentDirection.x === 0 && r===3 && isMoveSafe({x: 1, y: 0})){
+    currentDirection = {x: 1, y: 0};
+    return actions.right
+  }
+
 
     while (isMovePossible(currentDirection)) {
-      if (currentDirection.x === 1) {
+      if (!isBombNearby && !isFireNearby && !isMoveSafe(currentDirection)){
+        return actions.no_action
+      }
+      else if (currentDirection.x === 1) {
         return actions.right;
       } else if (currentDirection.y === 1) {
         return actions.down;
